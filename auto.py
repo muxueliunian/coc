@@ -11,29 +11,48 @@ import pygetwindow as gw
 
 def capture_window(window_title):
     """
-    截取指定标题的窗口
+    截取指定标题的窗口（改进版）
     :param window_title: 窗口标题（支持部分匹配）
-    :return: 截图图像（OpenCV格式）
+    :return: 截图图像（OpenCV格式）或None
     """
     try:
         # 查找目标窗口
-        win = gw.getWindowsWithTitle(window_title)[0]
+        windows = gw.getWindowsWithTitle(window_title)
+        if not windows:
+            print(f"未找到标题包含 [{window_title}] 的窗口")
+            return None
+            
+        win = windows[0]
         
-        # 激活并前置窗口（可选）
-        win.activate()
-        time.sleep(0.5)  # 更稳定的等待方式
+        # 窗口激活逻辑增强
+        if win.isMinimized:
+            win.restore()  # 先恢复最小化窗口
+        win.activate()     # 正确的激活方法（无需参数）
         
-        # 获取窗口坐标
-        left, top = win.left, win.top
-        width, height = win.width, win.height
+        # 等待窗口激活（使用渐进式等待）
+        for _ in range(5):
+            if win.isActive:
+                break
+            time.sleep(0.5)
+        else:
+            print("警告：窗口激活超时，可能截图不准确")
         
+        # 重新获取最新的窗口坐标（防止恢复/激活后坐标变化）
+        win = gw.getWindowsWithTitle(window_title)[0]  # 刷新窗口对象
+        left, top, width, height = win.left, win.top, win.width, win.height
+        
+        # 添加边界保护（防止负坐标）
+        screen_width, screen_height = pyautogui.size()
+        left = max(0, min(left, screen_width - 1))
+        top = max(0, min(top, screen_height - 1))
+        width = max(1, min(width, screen_width - left))
+        height = max(1, min(height, screen_height - top))
+        
+        time.sleep(1)
         # 截取窗口区域
         screenshot = pyautogui.screenshot(region=(left, top, width, height))
         return cv2.cvtColor(np.array(screenshot), cv2.COLOR_RGB2BGR)
     
-    except IndexError:
-        print(f"未找到标题包含 [{window_title}] 的窗口")
-        return None
     except Exception as e:
         print(f"截图失败：{str(e)}")
         return None
@@ -122,14 +141,6 @@ def color_verify(x, y, template_hsv, tolerance=15):
     
     return color_diff <= tolerance
 
-if __name__ == "__main__":
-    # 使用示例
-    find_and_click_image(
-        template_path="path/to/template.png",
-        threshold=0.75,
-        wait_time=0.5,
-        window_title="目标窗口标题"
-    )
 
 def is_admin():
     """检查当前是否以管理员权限运行"""
@@ -168,6 +179,12 @@ def main():
     else:
         print("当前已获得管理员权限")
     
+    time.sleep(1)
+    image_1 = capture_window("QQ")
+    time.sleep(1)
+    cv2.imshow("QQ",image_1)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
 
 
 
