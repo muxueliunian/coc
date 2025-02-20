@@ -255,59 +255,116 @@ def run_as_admin():
     sys.exit()  # 退出当前非特权进程
 
 
-def main():
-    # if not is_admin():
-    #     print("检测到当前未使用管理员权限，正在尝试提权...")
-    #     run_as_admin()
-    # else:
-    #     print("当前已获得管理员权限")
+import tkinter as tk
+from tkinter import ttk
+import threading
+
+# 功能执行函数
+def start_game():
     print("正在启动游戏")
     find_and_click_image(
-        template_path=r"C:\Users\26464\Desktop\coc\database\gamestart\game_start.png",
-        window_title="雷电",  # 游戏窗口标题
-        threshold = 0.7,
-        wait_time = 1
-        )
-    print("执行完成")
+        template_path=os.path.join('database', 'gamestart', 'game_start.png'),
+        window_title="雷电",
+        threshold=0.7,
+        wait_time=1
+    )
+    print("游戏启动完成")
+    time.sleep(15)
 
-    print("等待10秒")
-    time.sleep(10)
-    
+def close_xx():
     print("正在执行关闭叉叉")
     find_and_click_image_twice_XX(
-        template_path=r"C:\Users\26464\Desktop\coc\database\close.png",
-        window_title="雷电",  # 游戏窗口标题
-        threshold = 0.7,
-        wait_time = 1
-        )
-        
+        template_path=os.path.join('database', 'close.png'),
+        window_title="雷电",
+        threshold=0.7,
+        wait_time=1
+    )
 
-    print("正在执行自动收集黑油")
+def collect_dark_water():
+    print("正在收集黑油")
     find_and_click_image(
-        template_path=r"C:\Users\26464\Desktop\coc\database\Collector_image\dark_water.png",
-        window_title="雷电",  # 游戏窗口标题
-        threshold = 0.7,
-        wait_time = 1
-        )
-    print("执行完成")
+        template_path=os.path.join('database', 'Collector_image', 'dark_water.png'),
+        window_title="雷电",
+        threshold=0.7,
+        wait_time=1
+    )
 
-    print("正在执行自动收集金币")
+def collect_gold_coin():
+    print("正在收集金币")
     find_and_click_image(
-        template_path=r"C:\Users\26464\Desktop\coc\database\Collector_image\gold_coin.png",
-        window_title="雷电",  # 游戏窗口标题
-        threshold = 0.65,
-        wait_time = 1
-        )
-    print("执行完成")
+        template_path=os.path.join('database', 'Collector_image', 'gold_coin.png'),
+        window_title="雷电",
+        threshold=0.65,
+        wait_time=1
+    )
 
-    print("正在执行自动收集圣水")
+def collect_holy_water():
+    print("正在收集圣水")
     find_and_click_image(
-        template_path=r"C:\Users\26464\Desktop\coc\database\Collector_image\holy_water.png",
-        window_title="雷电",  # 游戏窗口标题
-        threshold = 0.7,
-        wait_time = 1
-        )
-    print("执行完成")
+        template_path=os.path.join('database', 'Collector_image', 'holy_water.png'),
+        window_title="雷电",
+        threshold=0.7,
+        wait_time=1
+    )
+
+def execute_operations():
+    # 禁用按钮防止重复点击
+    start_btn.config(state=tk.DISABLED)
+    
+    # 在新线程中执行任务
+    def thread_task():
+        try:
+            # 必须执行启动游戏
+            start_game()
+            
+            # 根据勾选状态执行其他操作
+            if close_xx_var.get():
+                close_xx()
+            if dark_water_var.get():
+                collect_dark_water()
+            if gold_coin_var.get():
+                collect_gold_coin()
+            if holy_water_var.get():
+                collect_holy_water()
+                
+        finally:
+            # 重新启用按钮
+            start_btn.config(state=tk.NORMAL)
+    
+    threading.Thread(target=thread_task, daemon=True).start()
+
+def main():
+    # 创建主窗口
+    root = tk.Tk()
+    root.title("COC自动化控制面板")
+    root.geometry("350x300")
+
+    # 使用ttk样式
+    style = ttk.Style()
+    style.configure('TCheckbutton', font=('微软雅黑', 10))
+    style.configure('TButton', font=('微软雅黑', 10))
+
+    # 创建变量
+    global close_xx_var, dark_water_var, gold_coin_var, holy_water_var
+    close_xx_var = tk.BooleanVar()
+    dark_water_var = tk.BooleanVar()
+    gold_coin_var = tk.BooleanVar()
+    holy_water_var = tk.BooleanVar()
+
+    # 创建控件
+    frame = ttk.LabelFrame(root, text="功能选择")
+    frame.pack(pady=10, padx=10, fill=tk.BOTH, expand=True)
+
+    ttk.Checkbutton(frame, text="1. 关闭叉叉", variable=close_xx_var).pack(anchor=tk.W, pady=2)
+    ttk.Checkbutton(frame, text="2. 收集黑油", variable=dark_water_var).pack(anchor=tk.W, pady=2)
+    ttk.Checkbutton(frame, text="3. 收集金币", variable=gold_coin_var).pack(anchor=tk.W, pady=2)
+    ttk.Checkbutton(frame, text="4. 收集圣水", variable=holy_water_var).pack(anchor=tk.W, pady=2)
+
+    global start_btn
+    start_btn = ttk.Button(root, text="开始游戏", command=execute_operations)
+    start_btn.pack(pady=10)
+
+    root.mainloop()
 
     
 
