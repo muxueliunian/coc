@@ -38,7 +38,8 @@ def capture_window(window_title):
             print("警告：窗口激活超时，可能截图不准确")
         
         # 重新获取最新的窗口坐标（防止恢复/激活后坐标变化）
-        win = gw.getWindowsWithTitle(window_title)[0]  # 刷新窗口对象
+        # 刷新窗口对象
+        win = gw.getWindowsWithTitle(window_title)[0]  
         left, top, width, height = win.left, win.top, win.width, win.height
         
         # 添加边界保护（防止负坐标）
@@ -101,7 +102,7 @@ def find_and_click_image(template_path, threshold=0.8, wait_time=1, window_title
                 global_x = center_x
                 global_y = center_y
 
-            # 直接执行双击（移除颜色验证）
+    
             pyautogui.click(global_x, global_y)
             print(f"成功点击坐标：({global_x}, {global_y})")
             break
@@ -156,9 +157,8 @@ def find_and_click_image_twice(template_path, threshold=0.8, wait_time=1, window
                 global_x = center_x
                 global_y = center_y
 
-            # 直接执行双击（移除颜色验证）
             pyautogui.click(global_x, global_y)
-            time.sleep(0.3)  # 添加双击间隔
+            time.sleep(0.3)  # 双击间隔
             pyautogui.click(global_x, global_y)
             print(f"成功双击坐标：({global_x}, {global_y})")
             break
@@ -167,6 +167,63 @@ def find_and_click_image_twice(template_path, threshold=0.8, wait_time=1, window
 
         time.sleep(wait_time)
 
+#点击叉叉特供函数找不到就跳过
+def find_and_click_image_twice_XX(template_path, threshold=0.8, wait_time=1, window_title=None):
+    """
+    双击版本图像匹配点击函数
+    
+    参数：
+    template_path - 模板图片路径
+    threshold - 匹配阈值(0-1)
+    wait_time - 检测间隔(秒)
+    window_title - 目标窗口标题
+    """
+    # 加载模板
+    template = cv2.imread(template_path)
+    if template is None:
+        raise ValueError(f"无法加载模板图片: {template_path}")
+
+    # 转换到HSV并提取H通道
+    template_hsv = cv2.cvtColor(template, cv2.COLOR_BGR2HSV)
+    template_h = template_hsv[:,:,0]
+    h, w = template_h.shape[:2]
+
+    while True:
+        screenshot = capture_window(window_title)
+        if screenshot is None:
+            time.sleep(wait_time)
+            continue
+        
+        # 执行模板匹配
+        screenshot_hsv = cv2.cvtColor(screenshot, cv2.COLOR_BGR2HSV)
+        screenshot_h = screenshot_hsv[:,:,0]
+        res = cv2.matchTemplate(screenshot_h, template_h, cv2.TM_CCOEFF_NORMED)
+        min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(res)
+
+        if max_val >= threshold:
+            # 计算坐标
+            center_x = max_loc[0] + w // 2
+            center_y = max_loc[1] + h // 2
+
+            # 转换全局坐标
+            try:
+                win = gw.getWindowsWithTitle(window_title)[0]
+                global_x = win.left + center_x
+                global_y = win.top + center_y
+            except:
+                global_x = center_x
+                global_y = center_y
+
+            pyautogui.click(global_x, global_y)
+            time.sleep(0.3)  # 双击间隔
+            pyautogui.click(global_x, global_y)
+            print(f"成功双击坐标：({global_x}, {global_y})")
+            break
+        else:
+            print("未找到目标，执行下一步")
+            break
+
+        time.sleep(wait_time)
 
 def is_admin():
     """检查当前是否以管理员权限运行"""
@@ -204,6 +261,26 @@ def main():
     #     run_as_admin()
     # else:
     #     print("当前已获得管理员权限")
+    print("正在启动游戏")
+    find_and_click_image(
+        template_path=r"C:\Users\26464\Desktop\coc\database\gamestart\game_start.png",
+        window_title="雷电",  # 游戏窗口标题
+        threshold = 0.7,
+        wait_time = 1
+        )
+    print("执行完成")
+
+    print("等待10秒")
+    time.sleep(10)
+    
+    print("正在执行关闭叉叉")
+    find_and_click_image_twice_XX(
+        template_path=r"C:\Users\26464\Desktop\coc\database\close.png",
+        window_title="雷电",  # 游戏窗口标题
+        threshold = 0.7,
+        wait_time = 1
+        )
+        
 
     print("正在执行自动收集黑油")
     find_and_click_image(
@@ -213,6 +290,7 @@ def main():
         wait_time = 1
         )
     print("执行完成")
+
     print("正在执行自动收集金币")
     find_and_click_image(
         template_path=r"C:\Users\26464\Desktop\coc\database\Collector_image\gold_coin.png",
@@ -221,6 +299,7 @@ def main():
         wait_time = 1
         )
     print("执行完成")
+
     print("正在执行自动收集圣水")
     find_and_click_image(
         template_path=r"C:\Users\26464\Desktop\coc\database\Collector_image\holy_water.png",
@@ -237,8 +316,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
-
-
-
